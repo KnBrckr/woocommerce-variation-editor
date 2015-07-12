@@ -200,9 +200,8 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 					
 				switch($doaction) {
 					case 'Update':
-					error_log(var_export($_REQUEST, true));
 						// Save updated variation data
-						$message = "Updated Variations";
+						$message = $this->save_variation_edits();
 						break;
 					
 					default:
@@ -220,6 +219,82 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			// Display message from save operation
 			if (isset($_REQUEST['wcve_message'])) {
 				$this->log_admin_notice("green", $_REQUEST['wcve_message']);
+			}
+		}
+		
+		/**
+		 * Save variation data updates provided in $_REQUEST
+		 *
+		 * @return string, Completion message to display on back end
+		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+		 */
+		private function save_variation_edits()
+		{
+			/*
+			  Save text/number input field values
+			 */
+
+			// List of variation fields that might get updated - checkboxes handled separate
+			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
+			
+			foreach ($variation_fields as $variation_field) {
+				if (! isset($_REQUEST[$variation_field])) continue;
+				
+				foreach($_REQUEST[$variation_field] as $variation_id => $value) {
+					$result = update_post_meta($variation_id, '_' . $variation_field, $value);
+					if (! $result) goto db_error;
+				}
+			}
+			
+			// FIXME - Might need to adjust _price and min/max in parent
+			// FIXME - Stock Qty & In Stock might need to be connected
+			
+			/*
+			  Take care of checkbox fields
+			 */
+			
+			if (isset($_REQUEST['orig_manage_stock'])) {
+				foreach($_REQUEST['orig_manage_stock'] as $variation_id => $value) {
+					$new = isset($_REQUEST['manage_stock'][$variation_id]) ? "yes" : "no";
+					if ($value != $new) {
+						$result = update_post_meta($variation_id, '_manage_stock', $value);
+						if (! $result) goto db_error;
+					}
+				}
+			}
+			
+			if (isset($_REQUEST['orig_stock_status'])) {
+				foreach($_REQUEST['orig_stock_status'] as $variation_id => $value) {
+					$new = isset($_REQUEST['stock_status'][$variation_id]) ? "instock" : "outofstock";
+					if ($value != $new) {
+						$result = update_post_meta($variation_id, '_stock_status', $value);
+						if (! $result) goto db_error;
+					}
+				}
+			}
+			
+			/*
+			  And finally select type fields
+			 */
+
+			if (isset($_REQUEST['orig_backorders'])) {
+				foreach($_REQUEST['orig_backorders'] as $variation_id => $value) {
+					$new = isset($_REQUEST['backorders'][$variation_id]) ? $_REQUEST['backorders'][$variation_id] : "allow";
+					if ($value != $new) {
+						$result = update_post_meta($variation_id, '_backorders', $value);
+						if (! $result) goto db_error;
+					}
+				}
+			}
+			
+			
+			// backorders
+			
+			return "Updates Saved";
+			
+			db_error : {
+				error_log(var_dump($result, true));
+				return "Update returned $result";
 			}
 		}
 		
