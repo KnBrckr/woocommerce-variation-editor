@@ -339,10 +339,6 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 						<input type="hidden" name="page" value="<?php echo $plugin_page ?>">
 						<input type="hidden" name="product_id" value="<?php echo esc_attr($this->product_id) ?>">
 						<?php
-						submit_button('Update', 'action', 'action');
-						// Set product id to use for table display
-						$this->variation_table->set_product($this->product_id);
-						
 						// Retrieve product variations for display
 						$this->variation_table->prepare_items();
 						// $this->variation_table->search_box('search', 'search_id'); // TODO Must follow prepare_items() call
