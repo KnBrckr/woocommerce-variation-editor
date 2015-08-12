@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Variation Editor
 Plugin URI:  http://action-a-day.com/
 Description: WooCommerce plugin to provide spreadsheet style editing for product variations.
-Version:     0.1
+Version:     0.2
 Author:      Kenneth J. Brucker
 Author URI:  http://action-a-day.com
 License:     GPL2
@@ -35,6 +35,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 
 	class aad_wcve
 	{
+		/**
+		 * Plugin version
+		 */
+		const PLUGIN_VER = 0.2;
+		
 		/**
 		 * Active Variable Product ID
 		 *
@@ -83,10 +88,21 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			if (class_exists('WooCommerce')) {
 				// Register admin javascript
 				wp_register_script('wcve-admin', plugins_url('wcve-admin.js', __FILE__),
-				                   array('jquery-core'),
-								   false, // No version # specified 
-								   true // Place in footer to allow localization if needed
+				                   array('jquery-core'),			// Dependencies
+								   self::PLUGIN_VER, 				// Script version
+								   true 							// Place in footer to allow localization if needed
 							   );
+							   
+				/**
+				 * Register admin CSS file
+				 */
+				wp_register_style(
+					'aad-csve-css',		 							// Handle
+					plugins_url('woocommerce-variation-editor.css', __FILE__), 	// URL to CSS file, relative to this directory
+					false,	 										// No Dependencies
+					self::PLUGIN_VER,								// CSS Version
+					'all'											// Use for all media types
+				);			   
 				
 				// Add section for reporting configuration errors and notices
 				add_action('admin_notices', array( $this, 'render_admin_notices'));
@@ -327,7 +343,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 						
 						// Retrieve product variations for display
 						$this->variation_table->prepare_items();
-						// $this->variation_table->search_box('search', 'search_id'); // Must follow prepare_items() call
+						// $this->variation_table->search_box('search', 'search_id'); // TODO Must follow prepare_items() call
 						$this->variation_table->display();
 						?>
 					</form>
@@ -356,7 +372,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */
 		function enqueue_admin_styles()
 		{
-			// FIXME
+			wp_enqueue_style('aad-csve-css');
 		}
 		
 		/**

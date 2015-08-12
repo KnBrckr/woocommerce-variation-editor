@@ -1,0 +1,38 @@
+/**
+ * CSS for WooCommerce Variation Editor Plugin
+ *
+ * @package WooCommerce Variation Editor
+ * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+ * @copyright 2015 Kenneth J. Brucker (email: ken.brucker@action-a-day.com)
+ * 
+ * This file is part of WooCommerce Variation Editor Plugin, a plugin for Wordpress.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2, as 
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ **/
+
+.aad-wcve-dimension {
+	display: block;
+}
+
+.aad-wcve-dimension label, .aad-csve-dimension input {
+	display: inline-block;
+}
+
+.aad-wcve-dimension label {
+	width: 1.5em;
+}
+
+.column-stock input {
+	width: 5em;
+}
