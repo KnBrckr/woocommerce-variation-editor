@@ -252,6 +252,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			  Save text/number input field values
 			 */
 
+			// FIXME Thumbnail id not saving
 			// List of variation fields that might get updated - checkboxes handled separate
 			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
 			
@@ -360,6 +361,8 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */
 		function enqueue_admin_scripts()
 		{
+			wp_enqueue_media(); // Enqueue the WP media scripts
+			
 			wp_enqueue_script('wcve-admin');
 		}
 		

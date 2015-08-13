@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-/**
- * Align label & input of dimension column
+/*
+	Align label & input of dimension column
  */ 
 .column-dimensions label, .aad-csve-dimension input {
 	display: inline-block;
@@ -32,9 +32,16 @@
 	width: 1.5em;
 }
 
-/**
- * Setup smaller width for stock field
+/*
+	Setup smaller width for stock field
  */
 .column-stock input {
 	width: 5em;
+}
+
+/*
+	Display pointer over image selection objects
+*/
+.wcve-image-selector {
+	cursor: pointer;
 }
