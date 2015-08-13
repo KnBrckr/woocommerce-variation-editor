@@ -252,7 +252,6 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			  Save text/number input field values
 			 */
 
-			// FIXME Thumbnail id not saving
 			// List of variation fields that might get updated - checkboxes handled separate
 			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
 			
@@ -261,7 +260,10 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				
 				foreach($_REQUEST[$variation_field] as $variation_id => $value) {
 					$result = update_post_meta($variation_id, '_' . $variation_field, $value);
-					if (! $result) goto db_error;
+					if (! $result) {
+						error_log("Failed to save post_meta id=$variation_id field=$variation_id value='$value'");
+						goto db_error;
+					} 
 				}
 			}
 			
@@ -276,8 +278,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				foreach($_REQUEST['orig_manage_stock'] as $variation_id => $value) {
 					$new = isset($_REQUEST['manage_stock'][$variation_id]) ? "yes" : "no";
 					if ($value != $new) {
-						$result = update_post_meta($variation_id, '_manage_stock', $value);
-						if (! $result) goto db_error;
+						$result = update_post_meta($variation_id, '_manage_stock', $new);
+						if (! $result) {
+							error_log("Failed to save post_meta id=$variation_id field=_manage_stock value='$new'");
+							goto db_error;
+						} 
 					}
 				}
 			}
@@ -286,8 +291,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				foreach($_REQUEST['orig_stock_status'] as $variation_id => $value) {
 					$new = isset($_REQUEST['stock_status'][$variation_id]) ? "instock" : "outofstock";
 					if ($value != $new) {
-						$result = update_post_meta($variation_id, '_stock_status', $value);
-						if (! $result) goto db_error;
+						$result = update_post_meta($variation_id, '_stock_status', $new);
+						if (! $result) {
+							error_log("Failed to save post_meta id=$variation_id field=_stock_status value='$new'");
+							goto db_error;
+						} 
 					}
 				}
 			}
@@ -297,11 +305,15 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			 */
 
 			if (isset($_REQUEST['orig_backorders'])) {
+				error_log(var_export($_REQUEST['orig_backorders'], true));
 				foreach($_REQUEST['orig_backorders'] as $variation_id => $value) {
 					$new = isset($_REQUEST['backorders'][$variation_id]) ? $_REQUEST['backorders'][$variation_id] : "allow";
 					if ($value != $new) {
-						$result = update_post_meta($variation_id, '_backorders', $value);
-						if (! $result) goto db_error;
+						$result = update_post_meta($variation_id, '_backorders', $new);
+						if (! $result) {
+							error_log("Failed to save post_meta id=$variation_id field=_backorders value='$new'");
+							goto db_error;
+						} 
 					}
 				}
 			}
@@ -312,8 +324,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			
 			db_error : {
 				// TODO Enhance logged error
-				error_log(var_dump($result, true));
-				return "Update returned $result";
+				return "Error on DB update, please check server error log file";
 			}
 		}
 		
@@ -324,7 +335,13 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */		
 		function render_edit_product_variations()
 		{
+			// FIXME Get plugin page from screen object?
 			global $plugin_page;
+			
+			/**
+			 * If $_REQUEST['wcve_message'] set, create clean form url 
+			 */
+			$formurl = isset($_REQUEST['wcve_message']) ? remove_query_arg(array('wcve_message'), wp_get_referer()) : "";
 			?>
 			<div class="wrap">
 				<div id="icon-edit" class="icon32 icon32-edit-product-variations">
@@ -333,9 +350,8 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				<h2><?php _e('Edit Product Variations','aad-wcve'); ?></h2>
 				<?php
 				if ($this->product_id) {
-					// FIXME Remove $_REQUEST['wcve_message'] from form input
 					?>
-					<form action method="post" accept-charset="utf-8">
+					<form action="<?php echo $formurl; ?>" method="post" accept-charset="utf-8">
 						<input type="hidden" name="post_type" value="product">
 						<input type="hidden" name="page" value="<?php echo $plugin_page ?>">
 						<input type="hidden" name="product_id" value="<?php echo esc_attr($this->product_id) ?>">
