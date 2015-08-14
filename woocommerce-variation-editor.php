@@ -247,8 +247,8 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
 					
 				switch($doaction) {
-					case 'Save Visible':
-						$metadata = $this->build_save_visible_metadata();
+					case 'Mass Edit':
+						$metadata = $this->build_mass_edit_metadata();
 						$message = $this->save_metadata($metadata);
 						break;
 					
@@ -360,7 +360,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 * @return void
 		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
 		 */
-		private function build_save_visible_metadata()
+		private function build_mass_edit_metadata()
 		{
 			$metadata = array();
 			
@@ -382,6 +382,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				if (isset($_REQUEST['all' . $field])) {
 					foreach ($ids as $id) {
 						// FIXME Any escaping or data validation on field needed?
+						// FIXME Handle price and stock field impact on other attributes
 						$metadata[] = array('var_id' => $id, 'field' => $field, 'value' => $_REQUEST['all' . $field]);
 					}
 				}
