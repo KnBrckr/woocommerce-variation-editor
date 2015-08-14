@@ -22,6 +22,13 @@
  **/
 
 /*
+	Hide selector controling visibility of the var_id column
+*/
+.metabox-prefs label[for=var_id-hide] {
+	display: none;
+}
+
+/*
 	Align label & input of dimension column
  */ 
 .column-dimensions label, .aad-csve-dimension input {
@@ -44,4 +51,15 @@
 */
 .wcve-image-selector {
 	cursor: pointer;
+}
+
+/*
+	Box the Row to Edit all visible items
+*/
+table.wcve_edit_variations {
+	border-collapse: collapse; /* So that borders on rows works */
+}
+tr.wcve-edit-all {
+	border: solid 1px;
+	border-color: inherit;
 }

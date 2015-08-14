@@ -66,12 +66,31 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			$this->product_id = isset($_REQUEST['product_id']) ? (int)$_REQUEST['product_id'] : NULL ;
 			$this->admin_notices = array();
 			$this->admin_notice_errors = array();
+			
+			// Filter needed for admin screen options on custom screens to save - filter is executed early in processing.
+			add_filter('set-screen-option', array($this, 'filter_set_screen_option'), 10, 3 );
 
 			// Setup admin page for editing variable products
 			add_action('admin_menu', array($this, 'action_admin_menu'));
 
 			// Do plugin initialization
 			add_action('admin_init', array($this, 'action_init'));
+		}
+		
+		/**
+		 * Filter used to save option values for admin screens
+		 *
+		 * If the option is one that has been defined by plugin, return the value
+		 *
+		 * @return value
+		 **/
+		function filter_set_screen_option($status, $option, $value)
+		{
+			if ('wcve_variations_per_page' == $option) {
+				$status = (int)$value;
+			}
+
+			return $status;
 		}
 		
 		/**
@@ -172,9 +191,16 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		{
 			if (! $this->product_id) return; // Leave if no product defined
 
-			// Setup class used for display of variations
-			$this->variation_table = new wcve_variation_Table($this->product_id);
+			/**
+			 * Setup screen options
+			 */
 			
+			add_screen_option('per_page', array(
+				'label' => 'Product Variations per page',
+				'default' => 20,
+				'option' => 'wcve_variations_per_page'
+			));
+
 			/*
 			  Get details on defined variations
 			 */
@@ -185,22 +211,26 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				if (! $attribute['is_variation']) continue;
 				
 				// Get terms for attribute taxonomy or value if it's a custom attribute
+				$variation_attrs = array();
 				if ($attribute['is_taxonomy']) {
 					$post_terms = wp_get_post_terms($this->product_id, $attribute['name']);
-					$variation = array();
 					foreach ($post_terms as $term) {
-						$variation[] = array('slug' => $term->slug, 'name' => $term->name);
+						$variation_attrs[$term->slug] = $term->name;	// Map slug to name
 					}
 				} else {
 					$options = array_map('trim', explode(WC_DELIMITER, $attribute['value']));
 					foreach ($options as $option) {
-						$variation[] = array('slug' => $option, 'name' => $option);
+						$variation_attrs[$option] = $option;
 					}
 				}
-				$variations[$attribute['name']] = $variation;
+				$variations[$attribute['name']] = $variation_attrs;
 			}
-			$this->variation_table->set_variations($variations);
 
+			/**
+			 * Setup Table class used to manage list of variations
+			 */
+			$this->variation_table = new wcve_variation_Table($this->product_id, $variations);
+			
 			/**
 			 * Perform actions
 			 *
@@ -208,7 +238,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			 */
 			$doaction = $this->variation_table->current_action();
 			
-			if ($doaction && !empty($_REQUEST) && check_admin_referer('bulk-wve_edit_variations', '_wpnonce')) {
+			if ($doaction && !empty($_REQUEST) && check_admin_referer('bulk-wcve_edit_variations', '_wpnonce')) {
 				// Does user have the needed credentials?
 				if (! current_user_can('manage_woocommerce')) {
 					wp_die('You are not allowed to manage WooCommerce Products');
@@ -217,9 +247,15 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
 					
 				switch($doaction) {
+					case 'Save Visible':
+						$metadata = $this->build_save_visible_metadata();
+						$message = $this->save_metadata($metadata);
+						break;
+					
 					case 'Update':
 						// Save updated variation data
-						$message = $this->save_variation_edits();
+						$metadata = $this->build_update_metadata();
+						$message = $this->save_metadata($metadata);
 						break;
 					
 					default:
@@ -241,29 +277,28 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		}
 		
 		/**
-		 * Save variation data updates provided in $_REQUEST
+		 * Build list of associative arrays containing meta fields to be updated
 		 *
-		 * @return string, Completion message to display on back end
-		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+		 * @return array of associative arrays tuplets ('var_id', 'field', 'value')
 		 */
-		private function save_variation_edits()
+		private function build_update_metadata()
 		{
+			$metadata = array();
+			
 			/*
 			  Save text/number input field values
 			 */
-
-			// List of variation fields that might get updated - checkboxes handled separate
 			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
 			
 			foreach ($variation_fields as $variation_field) {
 				if (! isset($_REQUEST[$variation_field])) continue;
 				
 				foreach($_REQUEST[$variation_field] as $variation_id => $value) {
-					$result = update_post_meta($variation_id, '_' . $variation_field, $value);
-					if (! $result) {
-						error_log("Failed to save post_meta id=$variation_id field=$variation_id value='$value'");
-						goto db_error;
-					} 
+					$metadata[] = array(
+						'var_id' => $variation_id,
+						'field' => '_' . $variation_field,
+						'value' => $value  // FIXME Escaping or data validation needed?
+					);
 				}
 			}
 			
@@ -273,16 +308,15 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/*
 			  Take care of checkbox fields
 			 */
-			
 			if (isset($_REQUEST['orig_manage_stock'])) {
 				foreach($_REQUEST['orig_manage_stock'] as $variation_id => $value) {
 					$new = isset($_REQUEST['manage_stock'][$variation_id]) ? "yes" : "no";
 					if ($value != $new) {
-						$result = update_post_meta($variation_id, '_manage_stock', $new);
-						if (! $result) {
-							error_log("Failed to save post_meta id=$variation_id field=_manage_stock value='$new'");
-							goto db_error;
-						} 
+						$metadata[] = array(
+							'var_id' => $variation_id,
+							'field' => '_manage_stock',
+							'value' => $new
+						);
 					}
 				}
 			}
@@ -291,11 +325,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				foreach($_REQUEST['orig_stock_status'] as $variation_id => $value) {
 					$new = isset($_REQUEST['stock_status'][$variation_id]) ? "instock" : "outofstock";
 					if ($value != $new) {
-						$result = update_post_meta($variation_id, '_stock_status', $new);
-						if (! $result) {
-							error_log("Failed to save post_meta id=$variation_id field=_stock_status value='$new'");
-							goto db_error;
-						} 
+						$metadata[] = array(
+							'var_id' => $variation_id,
+							'field' => '_stock_status',
+							'value' => $new
+						);
 					}
 				}
 			}
@@ -305,29 +339,72 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			 */
 
 			if (isset($_REQUEST['orig_backorders'])) {
-				error_log(var_export($_REQUEST['orig_backorders'], true));
 				foreach($_REQUEST['orig_backorders'] as $variation_id => $value) {
 					$new = isset($_REQUEST['backorders'][$variation_id]) ? $_REQUEST['backorders'][$variation_id] : "allow";
 					if ($value != $new) {
-						$result = update_post_meta($variation_id, '_backorders', $new);
-						if (! $result) {
-							error_log("Failed to save post_meta id=$variation_id field=_backorders value='$new'");
-							goto db_error;
-						} 
+						$metadata[] = array(
+							'var_id' => $variation_id,
+							'field' => '_backorders',
+							'value' => $new
+						);
 					}
 				}
 			}
 			
-			// backorders
-			
-			return "Updates Saved";
-			
-			db_error : {
-				// TODO Enhance logged error
-				return "Error on DB update, please check server error log file";
-			}
+			return $metadata;		
 		}
 		
+		/**
+		 * undocumented function
+		 *
+		 * @return void
+		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+		 */
+		private function build_save_visible_metadata()
+		{
+			$metadata = array();
+			
+			/**
+			 * Visible variations
+			 */
+			$ids = isset($_REQUEST['all_ids']) ? array_map('intval', explode(',', $_REQUEST['all_ids'])) : array();
+			
+			/**
+			 * Fields that are mass changeable
+			 */
+			$fields = array('_sku', '_regular_price', '_sale_price', '_stock', '_weight', '_length', '_width', '_height');
+			
+			/**
+			 * For each field, set value for all visible variations
+			 */
+			
+			foreach ($fields as $field) {
+				if (isset($_REQUEST['all' . $field])) {
+					foreach ($ids as $id) {
+						// FIXME Any escaping or data validation on field needed?
+						$metadata[] = array('var_id' => $id, 'field' => $field, 'value' => $_REQUEST['all' . $field]);
+					}
+				}
+			}
+			
+			return $metadata;
+		}
+		
+		/**
+		 * Save variation updates to DB
+		 *
+		 * @return string, result message
+		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+		 */
+		private function save_metadata($metadata)
+		{
+			foreach ($metadata as $item) {
+				update_post_meta($item['var_id'], $item['field'], $item['value']);
+			}
+			
+			return "Updates Saved";
+		}
+				
 		/**
 		 * Render content of page used to edit product variations
 		 *
@@ -341,7 +418,8 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/**
 			 * If $_REQUEST['wcve_message'] set, create clean form url 
 			 */
-			$formurl = isset($_REQUEST['wcve_message']) ? remove_query_arg(array('wcve_message'), wp_get_referer()) : "";
+			$formurl = isset($_REQUEST['wcve_message']) ? remove_query_arg('wcve_message', wp_get_referer()) : "";
+			
 			?>
 			<div class="wrap">
 				<div id="icon-edit" class="icon32 icon32-edit-product-variations">
