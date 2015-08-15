@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Variation Editor
 Plugin URI:  http://action-a-day.com/
 Description: WooCommerce plugin to provide spreadsheet style editing for product variations.
-Version:     0.2
+Version:     0.3
 Author:      Kenneth J. Brucker
 Author URI:  http://action-a-day.com
 License:     GPL2
@@ -27,9 +27,13 @@ Text Domain: aad-wcve
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// FIXME Use WC classes to set product data vs. accessing directly - Will help manage various bits of data and keep DB in sync.
+
 defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
 
-// Only setup on admin screens
+/**
+ * Only setup on admin screens
+ */
 if (is_admin() && ! class_exists("aad_wcve")) {
 	if (! include_once('class-wcve-variation-table.php')) return false;
 
@@ -38,7 +42,12 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		/**
 		 * Plugin version
 		 */
-		const PLUGIN_VER = 0.2;
+		const PLUGIN_VER = 0.3;
+		
+		/**
+		 * Default number of variations displayed per screen
+		 */
+		const DEFAULT_PER_PAGE = 20;
 		
 		/**
 		 * Active Variable Product ID
@@ -46,6 +55,13 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 * @var int
 		 */
 		private $product_id;
+		
+		/**
+		 * Active Variable Product
+		 *
+		 * @var Object, class WC_Product_Variable
+		 */
+		private $product;
 		
 		/**
 		 * Table used for generating list of product variations
@@ -61,7 +77,10 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 **/
 		protected $admin_notices;
 		
-		function __construct()
+		/**
+		 * Instantiate class
+		 */
+		public function __construct()
 		{
 			$this->product_id = isset($_REQUEST['product_id']) ? (int)$_REQUEST['product_id'] : NULL ;
 			$this->admin_notices = array();
@@ -74,7 +93,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			add_action('admin_menu', array($this, 'action_admin_menu'));
 
 			// Do plugin initialization
-			add_action('admin_init', array($this, 'action_init'));
+			add_action('admin_init', array($this, 'action_admin_init'));
 		}
 		
 		/**
@@ -82,9 +101,9 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 *
 		 * If the option is one that has been defined by plugin, return the value
 		 *
-		 * @return value
+		 * @return value for screen option
 		 **/
-		function filter_set_screen_option($status, $option, $value)
+		public function filter_set_screen_option($status, $option, $value)
 		{
 			if ('wcve_variations_per_page' == $option) {
 				$status = (int)$value;
@@ -94,18 +113,27 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		}
 		
 		/**
-		 * Hook into WP after plugins have loaded
+		 * Hook into WP after plugins have loaded, runs during admin_init
+		 *
+		 * Register scripts, css, add filter to row handling for page/post screens used to display product list.
 		 *
 		 * @return void
 		 */
-		function action_init()
+		public function action_admin_init()
 		{
-			// User must be able to manage WooCommerce
+			/**
+			 * User must be able to manage WooCommerce to continue  
+			 * TODO there might be a more granular privilege to check
+			 */
 			if (! current_user_can('manage_woocommerce')) return;
 			
-			// Only hook if WooCommerce is available
+			/**
+			 * Only hook if WooCommerce is available
+			 */
 			if (class_exists('WooCommerce')) {
-				// Register admin javascript
+				/**
+				 * Register admin javascript
+				 */
 				wp_register_script(
 					'wcve-admin', 									// Handle
 					plugins_url('wcve-admin.js', __FILE__),			// URL to .js file, relative to this directory
@@ -125,11 +153,13 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 					'all'											// Use for all media types
 				);			   
 				
-				// Add section for reporting configuration errors and notices
+				/**
+				 * Add section for reporting configuration errors and notices
+				 */
 				add_action('admin_notices', array( $this, 'render_admin_notices'));
 				
 				/*
-				  Add option for editing product variations to product rows
+				 * Add option for editing product variations to Product Row screen of WooCommerce
 				 */
 				add_filter('page_row_actions', array($this, 'filter_make_edit_variation_link_row'), 10, 2);				
 				add_filter('post_row_actions', array($this, 'filter_make_edit_variation_link_row'), 10, 2);
@@ -137,99 +167,93 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		}
 		
 		/**
-		 * For variation products, add option to edit the variation
+		 * When rendering product lists, add option to edit variable products
+		 *
+	     * This filter will only be active if user is able to manage WooCommerce products
+		 *
+		 * @param $actions, array of actions to be displayed for the Post
+		 * @param $post, Current Post object
+		 * @return array of actions to be displayed for the Post
 		 */
-		function filter_make_edit_variation_link_row($actions, $post) {
+		public function filter_make_edit_variation_link_row($actions, $post) {
 			if ($post->post_type != 'product') return $actions; // Only interested in WooCommerce products
 
-			$terms = wp_get_object_terms( $post->ID, 'product_type' );
-			$product_type = sanitize_title( current( $terms )->name );
+			$terms = wp_get_object_terms($post->ID, 'product_type');
+			$product_type = sanitize_title(current($terms)->name);
 			
-			// We checked up front if the user can edit posts, if we get here, they can.
+			/**
+			 * For variable products, add the edit variation action 
+			 */
 		    if ($product_type == 'variable') {
-		        $actions['edit_product_variations'] = '<a href="edit.php?post_type=product&page=edit-product-variations&product_id='.$post->ID.'" title="' //FIXME
+		        $actions['edit_product_variations'] = '<a href="edit.php?post_type=product&page=edit-product-variations&product_id='.$post->ID.'" title="' //FIXME Change how URL is built
 		            . esc_attr(__("Edit Product Variations", 'aad-wcve'))
 		            . '">' .  __('Edit Variations', 'aad-wcve') . '</a>';
 		    }
+			
 		    return $actions;
 		}
 		
 		/**
-		 * Create admin menu item for editing variable products
+		 * Create admin menu item for editing variable products and register supporting actions
 		 *
 		 * @return void
 		 */
-		function action_admin_menu()
+		public function action_admin_menu()
 		{
-			// User must be able to manage WooCommerce
+			/**
+			 * User must be able to manage WooCommerce
+			 */
 			if (! current_user_can('manage_woocommerce')) return;
 			
-			$slug = add_submenu_page('edit.php?post_type=product', 
+			$hook_suffix = add_submenu_page('edit.php?post_type=product', 
 				__('Edit Product Variations', 'aad-wcve'), 
 				__('Edit Variations', 'aad-wcve'), 
 				'manage_woocommerce', // If user can manage WooCommerce
 				'edit-product-variations',  // Slug for this menu
-				array($this, 'render_edit_product_variations') // Method to create page
+				array($this, 'render_edit_product_variations') // Method to render screen
 			);
 
-			// Pre-render processing for the edit screen
-			add_action('load-' . $slug, array($this, 'action_load_table'));
+			/**
+			 * Pre-render processing for the variation edit screen
+			 */
+			add_action('load-' . $hook_suffix, array($this, 'action_load_table'));
 
-			// Add style sheet and scripts needed in the options page
-			add_action('admin_print_scripts-' . $slug, array($this, 'enqueue_admin_scripts'));
-			add_action('admin_print_styles-' . $slug, array($this, 'enqueue_admin_styles'));
-			// FIXME $this->slug_edit_variations_table_page = $slug; // Save identifier for later
+			/**
+			 * Add style sheet and scripts needed on the variation edit screen
+			 */
+			add_action('admin_print_scripts-' . $hook_suffix, array($this, 'enqueue_admin_scripts'));
+			add_action('admin_print_styles-' . $hook_suffix, array($this, 'enqueue_admin_styles'));
 		}
 		
 		/**
-		 * Action called before rendering of page
+		 * Action called before rendering of screen
 		 * Handles plugin actions for table content
 		 *
 		 * @return void
 		 */
-		function action_load_table()
+		public function action_load_table()
 		{
 			if (! $this->product_id) return; // Leave if no product defined
+			$this->product = wc_get_product($this->product_id);
+			if (! $this->product || (! $this->product->is_type('variable'))) {
+				$this->product_id = NULL; // If product could not be retrieved or it's not a variable product, reset
+				unset($this->product);
+				return;
+			}
 
 			/**
 			 * Setup screen options
 			 */
-			
 			add_screen_option('per_page', array(
 				'label' => 'Product Variations per page',
-				'default' => 20,
+				'default' => self::DEFAULT_PER_PAGE,
 				'option' => 'wcve_variations_per_page'
 			));
-
-			/*
-			  Get details on defined variations
-			 */
-			$attributes = maybe_unserialize(get_post_meta($this->product_id, '_product_attributes', true));
-			$variations = array();
-			foreach ($attributes as $attribute) {
-				// Only need to handle variations
-				if (! $attribute['is_variation']) continue;
-				
-				// Get terms for attribute taxonomy or value if it's a custom attribute
-				$variation_attrs = array();
-				if ($attribute['is_taxonomy']) {
-					$post_terms = wp_get_post_terms($this->product_id, $attribute['name']);
-					foreach ($post_terms as $term) {
-						$variation_attrs[$term->slug] = $term->name;	// Map slug to name
-					}
-				} else {
-					$options = array_map('trim', explode(WC_DELIMITER, $attribute['value']));
-					foreach ($options as $option) {
-						$variation_attrs[$option] = $option;
-					}
-				}
-				$variations[$attribute['name']] = $variation_attrs;
-			}
-
+			
 			/**
-			 * Setup Table class used to manage list of variations
+			 * Setup Table class used to display product list variations
 			 */
-			$this->variation_table = new wcve_variation_Table($this->product_id, $variations);
+			$this->variation_table = new wcve_variation_Table($this->product);
 			
 			/**
 			 * Perform actions
