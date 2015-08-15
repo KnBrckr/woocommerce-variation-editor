@@ -263,11 +263,16 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			$doaction = $this->variation_table->current_action();
 			
 			if ($doaction && !empty($_REQUEST) && check_admin_referer('bulk-wcve_edit_variations', '_wpnonce')) {
-				// Does user have the needed credentials?
+				/**
+				 * Does user have the needed credentials?
+				 */
 				if (! current_user_can('manage_woocommerce')) {
 					wp_die('You are not allowed to manage WooCommerce Products');
 				}
 				
+				/**
+				 * Create redirect URL, strip some form elements for the redirect
+				 */
 				$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
 					
 				switch($doaction) {
@@ -314,20 +319,18 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			 */
 			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
 			
+			// FIXME Refactor repeated elements below
 			foreach ($variation_fields as $variation_field) {
 				if (! isset($_REQUEST[$variation_field])) continue;
 				
 				foreach($_REQUEST[$variation_field] as $variation_id => $value) {
 					$metadata[] = array(
 						'var_id' => $variation_id,
-						'field' => '_' . $variation_field,
+						'field' => $variation_field,
 						'value' => $value  // FIXME Escaping or data validation needed?
 					);
 				}
 			}
-			
-			// FIXME - Might need to adjust _price and min/max in parent
-			// FIXME - Stock Qty & In Stock might need to be connected
 			
 			/*
 			  Take care of checkbox fields
@@ -338,7 +341,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 					if ($value != $new) {
 						$metadata[] = array(
 							'var_id' => $variation_id,
-							'field' => '_manage_stock',
+							'field' => 'manage_stock',
 							'value' => $new
 						);
 					}
@@ -351,7 +354,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 					if ($value != $new) {
 						$metadata[] = array(
 							'var_id' => $variation_id,
-							'field' => '_stock_status',
+							'field' => 'stock_status',
 							'value' => $new
 						);
 					}
@@ -368,7 +371,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 					if ($value != $new) {
 						$metadata[] = array(
 							'var_id' => $variation_id,
-							'field' => '_backorders',
+							'field' => 'backorders',
 							'value' => $new
 						);
 					}
@@ -379,10 +382,9 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		}
 		
 		/**
-		 * undocumented function
+		 * When Mass Edit is requested, generate individual elements to update each product variation
 		 *
-		 * @return void
-		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+		 * @return array of associative arrays tuplets ('var_id', 'field', 'value')
 		 */
 		private function build_mass_edit_metadata()
 		{
@@ -396,17 +398,16 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/**
 			 * Fields that are mass changeable
 			 */
-			$fields = array('_sku', '_regular_price', '_sale_price', '_stock', '_weight', '_length', '_width', '_height');
+			$fields = array('sku', 'regular_price', 'sale_price', 'stock', 'weight', 'length', 'width', 'height');
 			
 			/**
 			 * For each field, set value for all visible variations
 			 */
 			
 			foreach ($fields as $field) {
-				if (isset($_REQUEST['all' . $field])) {
+				if (isset($_REQUEST['all_' . $field])) {
 					foreach ($ids as $id) {
 						// FIXME Any escaping or data validation on field needed?
-						// FIXME Handle price and stock field impact on other attributes
 						$metadata[] = array('var_id' => $id, 'field' => $field, 'value' => $_REQUEST['all' . $field]);
 					}
 				}
@@ -423,9 +424,12 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */
 		private function save_metadata($metadata)
 		{
+			// FIXME - Use WC_Product methods to update where available
 			foreach ($metadata as $item) {
-				update_post_meta($item['var_id'], $item['field'], $item['value']);
+				// update_post_meta($item['var_id'], $item['field'], $item['value']);
 			}
+			
+			// Sync prices and stock if needed
 			
 			return "Updates Saved";
 		}
@@ -450,7 +454,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				<div id="icon-edit" class="icon32 icon32-edit-product-variations">
 					<br>
 				</div>
-				<h2><?php _e('Edit Product Variations','aad-wcve'); ?></h2>
+				<h2><?php printf(__('Edit Product Variations for %s','aad-wcve'), esc_attr($this->product->get_title())); ?></h2>
 				<?php
 				if ($this->product_id) {
 					?>
