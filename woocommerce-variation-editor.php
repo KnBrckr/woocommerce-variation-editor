@@ -274,17 +274,26 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				 * Create redirect URL, strip some form elements for the redirect
 				 */
 				$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
-					
+				
+				/**
+				 * If a filter was active, preserve on redirect
+				 */
+				foreach ($this->product->get_variation_attributes() as $slug => $attributes) {
+					if (isset($_REQUEST["variation_${slug}"])) {
+						$sendback = add_query_arg("variation_${slug}", urlencode($_REQUEST["variation_${slug}"]));
+					}
+				}
+				
 				switch($doaction) {
 					case 'Mass Edit':
 						$metadata = $this->build_mass_edit_metadata();
-						$message = $this->save_metadata($metadata);
+						$this->save_metadata($metadata);
 						break;
 					
 					case 'Update':
 						// Save updated variation data
 						$metadata = $this->build_update_metadata();
-						$message = $this->save_metadata($metadata);
+						$this->save_metadata($metadata);
 						break;
 					
 					default:
@@ -293,7 +302,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 						break;
 				}
 
-				$sendback = add_query_arg('wcve_message', urlencode($message), $sendback);
+				// FIXME $sendback = add_query_arg('wcve_message', urlencode($message), $sendback);
 				wp_redirect($sendback);
 				exit;
 				// Don't get here
@@ -308,27 +317,24 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		/**
 		 * Build list of associative arrays containing meta fields to be updated
 		 *
-		 * @return array of associative arrays tuplets ('var_id', 'field', 'value')
+		 * @return array [variation_id][field] = value
 		 */
 		private function build_update_metadata()
 		{
-			$metadata = array();
+			$variation_updates = array();
 			
 			/*
 			  Save text/number input field values
 			 */
 			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
 			
-			// FIXME Refactor repeated elements below
 			foreach ($variation_fields as $variation_field) {
 				if (! isset($_REQUEST[$variation_field])) continue;
 				
 				foreach($_REQUEST[$variation_field] as $variation_id => $value) {
-					$metadata[] = array(
-						'var_id' => $variation_id,
-						'field' => $variation_field,
-						'value' => $value  // FIXME Escaping or data validation needed?
-					);
+					if (!isset($variation_updates[$variation_id]))
+						$variation_updates[$variation_id] = array();
+					$variation_updates[$variation_id][$variation_field] = $value;
 				}
 			}
 			
@@ -339,11 +345,9 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				foreach($_REQUEST['orig_manage_stock'] as $variation_id => $value) {
 					$new = isset($_REQUEST['manage_stock'][$variation_id]) ? "yes" : "no";
 					if ($value != $new) {
-						$metadata[] = array(
-							'var_id' => $variation_id,
-							'field' => 'manage_stock',
-							'value' => $new
-						);
+						if (!isset($variation_updates[$variation_id]))
+							$variation_updates[$variation_id] = array();
+						$variation_updates[$variation_id]['manage_stock'] = $new;
 					}
 				}
 			}
@@ -352,11 +356,9 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				foreach($_REQUEST['orig_stock_status'] as $variation_id => $value) {
 					$new = isset($_REQUEST['stock_status'][$variation_id]) ? "instock" : "outofstock";
 					if ($value != $new) {
-						$metadata[] = array(
-							'var_id' => $variation_id,
-							'field' => 'stock_status',
-							'value' => $new
-						);
+						if (!isset($variation_updates[$variation_id]))
+							$variation_updates[$variation_id] = array();
+						$variation_updates[$variation_id]['stock_status'] = $new;
 					}
 				}
 			}
@@ -364,74 +366,213 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/*
 			  And finally select type fields
 			 */
-
 			if (isset($_REQUEST['orig_backorders'])) {
 				foreach($_REQUEST['orig_backorders'] as $variation_id => $value) {
 					$new = isset($_REQUEST['backorders'][$variation_id]) ? $_REQUEST['backorders'][$variation_id] : "allow";
 					if ($value != $new) {
-						$metadata[] = array(
-							'var_id' => $variation_id,
-							'field' => 'backorders',
-							'value' => $new
-						);
+						if (!isset($variation_updates[$variation_id]))
+							$variation_updates[$variation_id] = array();
+						$variation_updates[$variation_id]['backorders'] = $new;
 					}
 				}
 			}
 			
-			return $metadata;		
+			return $variation_updates;		
 		}
 		
 		/**
 		 * When Mass Edit is requested, generate individual elements to update each product variation
 		 *
-		 * @return array of associative arrays tuplets ('var_id', 'field', 'value')
+		 * @return array [variation_id][field] = value
 		 */
 		private function build_mass_edit_metadata()
 		{
-			$metadata = array();
+			$variation_updates = array();
 			
 			/**
 			 * Visible variations
 			 */
 			$ids = isset($_REQUEST['all_ids']) ? array_map('intval', explode(',', $_REQUEST['all_ids'])) : array();
+			if (count($ids) == 0)
+				return array();
 			
 			/**
 			 * Fields that are mass changeable
 			 */
-			$fields = array('sku', 'regular_price', 'sale_price', 'stock', 'weight', 'length', 'width', 'height');
+			$fields = array('thumbnail_id', 'regular_price', 'sale_price', 'stock', 'weight', 'length', 'width', 'height');
 			
 			/**
 			 * For each field, set value for all visible variations
 			 */
-			
 			foreach ($fields as $field) {
 				if (isset($_REQUEST['all_' . $field])) {
+					$value = $_REQUEST['all_' . $field];
+					
 					foreach ($ids as $id) {
-						// FIXME Any escaping or data validation on field needed?
-						$metadata[] = array('var_id' => $id, 'field' => $field, 'value' => $_REQUEST['all' . $field]);
+						if (!isset($variation_updates[$id]))
+							$variation_updates[$id] = array();
+						$variation_updates[$id][$field] = $value;
 					}
 				}
 			}
 			
-			return $metadata;
+			return $variation_updates;
 		}
 		
 		/**
 		 * Save variation updates to DB
 		 *
-		 * @return string, result message
-		 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+		 * Available Fields:
+		 *  - sku
+		 *	- thumbnail_id
+		 *	- regular_price
+		 *	- sale_price
+		 *	- stock_status
+		 *	- manage_stock
+		 *	- stock
+		 *	- backorders
+		 *	- weight
+		 *	- length, width, height
+		 *
+		 * See woocommerce/includes/admin/meta-boxes/class-wc-meta-box-product-data.php
+		 *
+		 * @param array [variation_id][field] = value
+		 * @return void
 		 */
-		private function save_metadata($metadata)
+		private function save_metadata($variation_updates)
 		{
-			// FIXME - Use WC_Product methods to update where available
-			foreach ($metadata as $item) {
-				// update_post_meta($item['var_id'], $item['field'], $item['value']);
-			}
+			if (count($variation_updates) == 0) return;
+			$price_changed = false;
 			
-			// Sync prices and stock if needed
+			foreach ($variation_updates as $variation_id => $fields) {
+				/**
+				 * SKU
+				 */
+				if (isset($fields['sku'])) {
+					$sku = get_post_meta($variation_id, '_sku', true);
+					$new_sku = wc_clean(stripslashes($fields['sku']));
+					
+					if ('' == $new_sku || empty($new_sku)) {
+						update_post_meta($variation_id, '_sku', '');
+					} else {
+						/**
+						 * Update SKU in compliance with unique requirements, if any
+						 */
+						$unique_sku = wc_product_has_unique_sku( $variation_id, $new_sku );
+						if (!$unique_sku) {
+							$this->add_error($variation_id, 'sku', 'SKU must be unique');
+						} else {
+							update_post_meta($variation_id, '_sku', $new_sku);
+						}
+					}
+				}
+				
+				/**
+				 * Thumbnail
+				 */
+				if (isset($fields['thumbnail_id'])) {
+					update_post_meta($variation_id, '_thumbnail_id', absint($fields['thumbnail_id']));
+				}
+				
+				/**
+				 * Price fields - If one of the price related fields is set determine new price for variation
+				 */
+				if (isset($fields['regular_price']) || isset($fields['sale_price']) || 
+					isset($fields['date_from']) || isset($fields['date_to'])) {
+						/**
+						 * Collect new price & sale_price settings either from provided input or DB
+						 */
+						$regular_price = isset($fields['regular_price']) ? wc_format_decimal($fields['regular_price']) : 
+							get_post_meta($variation_id, '_regular_price', true);
+						$sale_price = isset($fields['sale_price']) ? wc_format_decimal($fields['sale_price']) :
+							get_post_meta($variation_id, '_sale_price', true);
+						$date_from = isset($fields['date_from']) ? 
+							($fields['date_from'] === '' ? '' : strtotime(wc_clean($fields['date_from']))) 
+							:  get_post_meta($variation_id, '_sale_price_dates_from', true);
+						$date_to = isset($fields['date_to']) ? 
+							($fields['date_to'] === '' ? '' : strtotime(wc_clean($fields['date_to']))) 
+							:  get_post_meta($variation_id, '_sale_price_dates_to', true);
+						$now = strtotime( 'NOW', current_time( 'timestamp' ));
+						
+						if ($date_to && !$date_from)
+							$date_from = $now;
+						
+						/**
+						 * If no dates specified for sale
+						 */
+						if ($sale_price && !$date_to && !$date_from) {
+							$price = $sale_price;
+						} else {
+							$price = $regular_price;
+						}
+						
+						/**
+						 * If sale has started ...
+						 */
+						if ($sale_price && $date_from && $date_from < $now) {
+							$price = $sale_price;
+						}
+						
+						/**
+						 * ... But if we're past the end of the sale
+						 */
+						if ($date_to && $date_to < $now) {
+							$price = $regular_price;
+							$date_from = '';
+							$date_to = '';
+						}
+						
+						/**
+						 * Now that that's all sorted out, save the pricing for this variation
+						 */
+						update_post_meta($variation_id, '_price', $price);
+						update_post_meta($variation_id, '_regular_price', $regular_price);
+						update_post_meta($variation_id, '_sale_price', $sale_price);
+						update_post_meta($variation_id, '_sale_price_dates_from', $date_from);
+						update_post_meta($variation_id, '_sale_price_dates_to', $date_to);
+						$price_changed = true;
+				} // End Price
+				
+				/**
+				 * Stock
+				 */
+				if (isset($fields['stock_status'])) {
+					wc_update_product_stock_status( $variation_id, $fields['stock_status']);
+				}
+
+				$manage_stock = isset($fields['manage_stock']) ? 
+					$fields['manage_stock'] : get_post_meta($variation_id, '_manage_stock', true);
+				update_post_meta($variation_id, '_manage_stock', $manage_stock);
+				
+				if ($manage_stock == "yes") {
+					if (isset($fields['backorders'])) {
+						update_post_meta($variation_id, '_backorders', $fields['backorders']);
+					}
+					if (isset($fields['stock'])) {
+						wc_update_product_stock($variation_id, wc_stock_amount($fields['stock']));
+					}
+				} else {
+					delete_post_meta($variation_id, '_backorders');
+					delete_post_meta($variation_id, '_stock');
+				}
+				
+				/**
+				 * Weight & Dimensions
+				 */
+				// FIXME If product is virtual, skip changes
+				foreach (array('weight', 'width', 'length', 'height') as $field) {
+					if (isset($fields[$field])) {
+						update_post_meta($variation_id, '_' . $field ,
+							$fields[$field] === '' ? '' : wc_format_decimal($fields[$field]));
+					}
+				}
+			} // End for each product variation
 			
-			return "Updates Saved";
+			/**
+			 * Update variable parent to keep prices in sync
+			 */
+			if ($price_changed)
+				WC_Product_Variable::sync($this->product->id);
 		}
 				
 		/**

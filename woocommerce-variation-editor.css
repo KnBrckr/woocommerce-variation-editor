@@ -29,6 +29,14 @@
 }
 
 /*
+	Highlight fields that have changed
+*/
+input.changed, select.changed {
+	border-width: 1px;
+	border-color: #C6F;
+}
+
+/*
 	Align label & input of dimension column
  */ 
 .column-dimensions label, .aad-csve-dimension input {
