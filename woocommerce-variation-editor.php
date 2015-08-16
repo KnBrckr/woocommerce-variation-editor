@@ -27,8 +27,6 @@ Text Domain: aad-wcve
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-// FIXME Use WC classes to set product data vs. accessing directly - Will help manage various bits of data and keep DB in sync.
-
 defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
 
 /**
@@ -48,6 +46,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 * Default number of variations displayed per screen
 		 */
 		const DEFAULT_PER_PAGE = 20;
+		
+		/**
+		 * Slug for menu page
+		 */
+		const MENU_SLUG = 'edit-product-variations';
 		
 		/**
 		 * Active Variable Product ID
@@ -185,7 +188,10 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			 * For variable products, add the edit variation action 
 			 */
 		    if ($product_type == 'variable') {
-		        $actions['edit_product_variations'] = '<a href="edit.php?post_type=product&page=edit-product-variations&product_id='.$post->ID.'" title="' //FIXME Change how URL is built
+				$url = str_replace('#038;', '&', menu_page_url(self::MENU_SLUG, false));
+				$url = add_query_arg('product_id', esc_attr($post->ID), $url);
+				
+		        $actions['edit_product_variations'] = '<a href="' . esc_url($url) . '" title="'
 		            . esc_attr(__("Edit Product Variations", 'aad-wcve'))
 		            . '">' .  __('Edit Variations', 'aad-wcve') . '</a>';
 		    }
@@ -209,7 +215,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				__('Edit Product Variations', 'aad-wcve'), 
 				__('Edit Variations', 'aad-wcve'), 
 				'manage_woocommerce', // If user can manage WooCommerce
-				'edit-product-variations',  // Slug for this menu
+				self::MENU_SLUG,  // Slug for this menu
 				array($this, 'render_edit_product_variations') // Method to render screen
 			);
 
@@ -559,7 +565,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				/**
 				 * Weight & Dimensions
 				 */
-				// FIXME If product is virtual, skip changes
+				// TODO If product is virtual, skip changes
 				foreach (array('weight', 'width', 'length', 'height') as $field) {
 					if (isset($fields[$field])) {
 						update_post_meta($variation_id, '_' . $field ,
@@ -582,37 +588,36 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */		
 		function render_edit_product_variations()
 		{
-			// FIXME Get plugin page from screen object?
-			global $plugin_page;
+			$title = isset($this->product) ? $this->product->get_title() : "Undefined";
 			
 			/**
-			 * If $_REQUEST['wcve_message'] set, create clean form url 
+			 * Build form url
 			 */
-			$formurl = isset($_REQUEST['wcve_message']) ? remove_query_arg('wcve_message', wp_get_referer()) : "";
+			$formurl = str_replace('#038;', '&', menu_page_url(self::MENU_SLUG, false));
+			$formurl = add_query_arg('product_id', esc_attr($this->product_id), $formurl);
 			
 			?>
 			<div class="wrap">
 				<div id="icon-edit" class="icon32 icon32-edit-product-variations">
 					<br>
 				</div>
-				<h2><?php printf(__('Edit Product Variations for %s','aad-wcve'), esc_attr($this->product->get_title())); ?></h2>
+				<h2><?php printf(__('Edit Product Variations for %s','aad-wcve'), esc_attr($title)); ?></h2>
 				<?php
 				if ($this->product_id) {
 					?>
-					<form action="<?php echo $formurl; ?>" method="post" accept-charset="utf-8">
-						<input type="hidden" name="post_type" value="product">
-						<input type="hidden" name="page" value="<?php echo $plugin_page ?>">
-						<input type="hidden" name="product_id" value="<?php echo esc_attr($this->product_id) ?>">
+					<form action="<?php echo esc_url($formurl); ?>" method="post" accept-charset="utf-8">
 						<?php
 						// Retrieve product variations for display
 						$this->variation_table->prepare_items();
-						// $this->variation_table->search_box('search', 'search_id'); // TODO Must follow prepare_items() call
+						// $this->variation_table->search_box('search', 'search_id'); // TODO Search Box must follow prepare_items() call
 						$this->variation_table->display();
 						?>
 					</form>
 					<?php
-				} else
-					echo 'Please use the <a href="edit.php?post_status=all&post_type=product&product_type=variable">Product List</a> to select a variable product to edit';
+				} else {
+					$url = add_query_arg('product_type', 'variable', admin_url('edit.php?post_type=product'));
+					echo 'Please use the <a href="' . esc_url($url) . '">Product List</a> to select a variable product to edit';
+				}
 				?>
 			</div>
 			<?php
