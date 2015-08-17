@@ -182,20 +182,23 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			if ($post->post_type != 'product') return $actions; // Only interested in WooCommerce products
 
 			$terms = wp_get_object_terms($post->ID, 'product_type');
-			$product_type = sanitize_title(current($terms)->name);
+
+			if (count($terms) > 0) {
+				$product_type = sanitize_title(current($terms)->name);
 			
-			/**
-			 * For variable products, add the edit variation action 
-			 */
-		    if ($product_type == 'variable') {
-				$url = str_replace('#038;', '&', menu_page_url(self::MENU_SLUG, false));
-				$url = add_query_arg('product_id', esc_attr($post->ID), $url);
+				/**
+				 * For variable products, add the edit variation action 
+				 */
+			    if ($product_type == 'variable') {
+					$url = str_replace('#038;', '&', menu_page_url(self::MENU_SLUG, false));
+					$url = add_query_arg('product_id', esc_attr($post->ID), $url);
 				
-		        $actions['edit_product_variations'] = '<a href="' . esc_url($url) . '" title="'
-		            . esc_attr(__("Edit Product Variations", 'aad-wcve'))
-		            . '">' .  __('Edit Variations', 'aad-wcve') . '</a>';
-		    }
-			
+			        $actions['edit_product_variations'] = '<a href="' . esc_url($url) . '" title="'
+			            . esc_attr(__("Edit Product Variations", 'aad-wcve'))
+			            . '">' .  __('Edit Variations', 'aad-wcve') . '</a>';
+			    }
+			}
+
 		    return $actions;
 		}
 		
@@ -286,10 +289,10 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				 */
 				foreach ($this->product->get_variation_attributes() as $slug => $attributes) {
 					if (isset($_REQUEST["variation_${slug}"])) {
-						$sendback = add_query_arg("variation_${slug}", urlencode($_REQUEST["variation_${slug}"]));
+						$sendback = add_query_arg("variation_${slug}", urlencode($_REQUEST["variation_${slug}"]), $sendback);
 					}
 				}
-				
+
 				switch($doaction) {
 					case 'Mass Edit':
 						$metadata = $this->build_mass_edit_metadata();
@@ -309,7 +312,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				}
 
 				// FIXME $sendback = add_query_arg('wcve_message', urlencode($message), $sendback);
-				wp_redirect($sendback);
+				wp_safe_redirect($sendback);
 				exit;
 				// Don't get here
 			}
