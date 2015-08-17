@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Variation Editor
 Plugin URI:  http://action-a-day.com/
 Description: WooCommerce plugin to provide spreadsheet style editing for product variations.
-Version:     0.3
+Version:     0.4
 Author:      Kenneth J. Brucker
 Author URI:  http://action-a-day.com
 License:     GPL2
@@ -40,7 +40,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		/**
 		 * Plugin version
 		 */
-		const PLUGIN_VER = 0.3;
+		const PLUGIN_VER = 0.4;
 		
 		/**
 		 * Default number of variations displayed per screen
@@ -85,7 +85,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */
 		public function __construct()
 		{
-			$this->product_id = isset($_REQUEST['product_id']) ? (int)$_REQUEST['product_id'] : NULL ;
+			$this->product_id = ! empty($_REQUEST['product_id']) ? (int)$_REQUEST['product_id'] : NULL ;
 			$this->admin_notices = array();
 			$this->admin_notice_errors = array();
 			
@@ -288,7 +288,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				 * If a filter was active, preserve on redirect
 				 */
 				foreach ($this->product->get_variation_attributes() as $slug => $attributes) {
-					if (isset($_REQUEST["variation_${slug}"])) {
+					if (! empty($_REQUEST["variation_${slug}"])) {
 						$sendback = add_query_arg("variation_${slug}", urlencode($_REQUEST["variation_${slug}"]), $sendback);
 					}
 				}
@@ -326,7 +326,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			}
 			
 			// Display message from save operation
-			if (isset($_REQUEST['wcve_message'])) {
+			if (! empty($_REQUEST['wcve_message'])) {
 				$this->log_admin_notice("green", $_REQUEST['wcve_message']);
 			}
 		}
@@ -346,10 +346,10 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			$variation_fields = array("sku", "thumbnail_id", "weight", "length", "width", "height", "stock", "regular_price", "sale_price");
 			
 			foreach ($variation_fields as $variation_field) {
-				if (! isset($_REQUEST[$variation_field])) continue;
+				if (empty($_REQUEST[$variation_field])) continue;
 				
 				foreach($_REQUEST[$variation_field] as $variation_id => $value) {
-					if (!isset($variation_updates[$variation_id]))
+					if (empty($variation_updates[$variation_id]))
 						$variation_updates[$variation_id] = array();
 					$variation_updates[$variation_id][$variation_field] = $value;
 				}
@@ -358,22 +358,22 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/*
 			  Take care of checkbox fields
 			 */
-			if (isset($_REQUEST['orig_manage_stock'])) {
+			if (! empty($_REQUEST['orig_manage_stock'])) {
 				foreach($_REQUEST['orig_manage_stock'] as $variation_id => $value) {
-					$new = isset($_REQUEST['manage_stock'][$variation_id]) ? "yes" : "no";
+					$new = ! empty($_REQUEST['manage_stock'][$variation_id]) ? 'yes' : 'no';
 					if ($value != $new) {
-						if (!isset($variation_updates[$variation_id]))
+						if (empty($variation_updates[$variation_id]))
 							$variation_updates[$variation_id] = array();
 						$variation_updates[$variation_id]['manage_stock'] = $new;
 					}
 				}
 			}
 			
-			if (isset($_REQUEST['orig_stock_status'])) {
+			if (! empty($_REQUEST['orig_stock_status'])) {
 				foreach($_REQUEST['orig_stock_status'] as $variation_id => $value) {
-					$new = isset($_REQUEST['stock_status'][$variation_id]) ? "instock" : "outofstock";
+					$new = ! empty($_REQUEST['stock_status'][$variation_id]) ? 'instock' : 'outofstock';
 					if ($value != $new) {
-						if (!isset($variation_updates[$variation_id]))
+						if (empty($variation_updates[$variation_id]))
 							$variation_updates[$variation_id] = array();
 						$variation_updates[$variation_id]['stock_status'] = $new;
 					}
@@ -383,11 +383,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/*
 			  And finally select type fields
 			 */
-			if (isset($_REQUEST['orig_backorders'])) {
+			if (! empty($_REQUEST['orig_backorders'])) {
 				foreach($_REQUEST['orig_backorders'] as $variation_id => $value) {
-					$new = isset($_REQUEST['backorders'][$variation_id]) ? $_REQUEST['backorders'][$variation_id] : "allow";
+					$new = ! empty($_REQUEST['backorders'][$variation_id]) ? $_REQUEST['backorders'][$variation_id] : "allow";
 					if ($value != $new) {
-						if (!isset($variation_updates[$variation_id]))
+						if (empty($variation_updates[$variation_id]))
 							$variation_updates[$variation_id] = array();
 						$variation_updates[$variation_id]['backorders'] = $new;
 					}
@@ -409,7 +409,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/**
 			 * Visible variations
 			 */
-			$ids = isset($_REQUEST['all_ids']) ? array_map('intval', explode(',', $_REQUEST['all_ids'])) : array();
+			$ids = ! empty($_REQUEST['all_ids']) ? array_map('intval', explode(',', $_REQUEST['all_ids'])) : array();
 			if (count($ids) == 0)
 				return array();
 			
@@ -422,11 +422,11 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			 * For each field, set value for all visible variations
 			 */
 			foreach ($fields as $field) {
-				if (isset($_REQUEST['all_' . $field])) {
+				if (! empty($_REQUEST['all_' . $field])) {
 					$value = $_REQUEST['all_' . $field];
 					
 					foreach ($ids as $id) {
-						if (!isset($variation_updates[$id]))
+						if (empty($variation_updates[$id]))
 							$variation_updates[$id] = array();
 						$variation_updates[$id][$field] = $value;
 					}
@@ -576,11 +576,12 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				/**
 				 * Weight & Dimensions
 				 */
-				// TODO If product is virtual, skip changes
-				foreach (array('weight', 'width', 'length', 'height') as $field) {
-					if (isset($fields[$field])) {
-						update_post_meta($variation_id, '_' . $field ,
-							$fields[$field] === '' ? '' : wc_format_decimal($fields[$field]));
+				if (! $this->product->is_virtual()) {
+					foreach (array('weight', 'width', 'length', 'height') as $field) {
+						if (isset($fields[$field])) {
+							update_post_meta($variation_id, '_' . $field ,
+								$fields[$field] === '' ? '' : wc_format_decimal($fields[$field]));
+						}
 					}
 				}
 			} // End for each product variation
@@ -599,7 +600,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		 */		
 		function render_edit_product_variations()
 		{
-			$title = isset($this->product) ? $this->product->get_title() : "Undefined";
+			$title = ! empty($this->product) ? $this->product->get_title() : "Undefined";
 			
 			/**
 			 * Build form url

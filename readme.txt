@@ -35,12 +35,12 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
-= 0.3 =
+= 0.4 =
 * First Release
 
 == Upgrade Notice ==
 
-= 0.3 =
+= 0.4 =
 * First Release
 
 == Arbitrary section ==
