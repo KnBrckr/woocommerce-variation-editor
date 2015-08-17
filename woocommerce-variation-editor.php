@@ -300,9 +300,17 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 						break;
 					
 					case 'Update':
-						// Save updated variation data
+						/**
+						 * Save Updated fields for displayed variations
+						 */
 						$metadata = $this->build_update_metadata();
 						$this->save_metadata($metadata);
+						break;
+						
+					case 'Reset':
+						/**
+						 * Screen refresh - no changes will be applied
+						 */
 						break;
 					
 					default:
