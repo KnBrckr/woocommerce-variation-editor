@@ -31,9 +31,10 @@
 /*
 	Highlight fields that have changed
 */
-input.changed, select.changed {
+input.changed, select.changed, img.changed {
 	border-width: 1px;
 	border-color: #C6F;
+	border-style: solid;
 }
 
 /*

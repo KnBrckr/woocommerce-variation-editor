@@ -563,6 +563,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				
 				if ($manage_stock == "yes") {
 					if (isset($fields['backorders'])) {
+						// FIXME Validate field value
 						update_post_meta($variation_id, '_backorders', $fields['backorders']);
 					}
 					if (isset($fields['stock'])) {
