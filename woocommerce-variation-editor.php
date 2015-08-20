@@ -294,11 +294,6 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				}
 
 				switch($doaction) {
-					case 'Mass Edit':
-						$metadata = $this->build_mass_edit_metadata();
-						$this->save_metadata($metadata);
-						break;
-					
 					case 'Update':
 						/**
 						 * Save Updated fields for displayed variations
@@ -395,45 +390,6 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			}
 			
 			return $variation_updates;		
-		}
-		
-		/**
-		 * When Mass Edit is requested, generate individual elements to update each product variation
-		 *
-		 * @return array [variation_id][field] = value
-		 */
-		private function build_mass_edit_metadata()
-		{
-			$variation_updates = array();
-			
-			/**
-			 * Visible variations
-			 */
-			$ids = ! empty($_REQUEST['all_ids']) ? array_map('intval', explode(',', $_REQUEST['all_ids'])) : array();
-			if (count($ids) == 0)
-				return array();
-			
-			/**
-			 * Fields that are mass changeable
-			 */
-			$fields = array('thumbnail_id', 'regular_price', 'sale_price', 'stock', 'weight', 'length', 'width', 'height');
-			
-			/**
-			 * For each field, set value for all visible variations
-			 */
-			foreach ($fields as $field) {
-				if (! empty($_REQUEST['all_' . $field])) {
-					$value = $_REQUEST['all_' . $field];
-					
-					foreach ($ids as $id) {
-						if (empty($variation_updates[$id]))
-							$variation_updates[$id] = array();
-						$variation_updates[$id][$field] = $value;
-					}
-				}
-			}
-			
-			return $variation_updates;
 		}
 		
 		/**
@@ -563,7 +519,6 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				
 				if ($manage_stock == "yes") {
 					if (isset($fields['backorders'])) {
-						// FIXME Validate field value
 						update_post_meta($variation_id, '_backorders', $fields['backorders']);
 					}
 					if (isset($fields['stock'])) {
