@@ -498,12 +498,12 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 						/**
 						 * Now that that's all sorted out, save the pricing for this variation
 						 */
+						$price_changed = true;
 						update_post_meta($variation_id, '_price', $price);
 						update_post_meta($variation_id, '_regular_price', $regular_price);
 						update_post_meta($variation_id, '_sale_price', $sale_price);
 						update_post_meta($variation_id, '_sale_price_dates_from', $date_from);
 						update_post_meta($variation_id, '_sale_price_dates_to', $date_to);
-						$price_changed = true;
 				} // End Price
 				
 				/**
@@ -545,8 +545,9 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			/**
 			 * Update variable parent to keep prices in sync
 			 */
-			if ($price_changed)
+			if ($price_changed) {
 				WC_Product_Variable::sync($this->product->id);
+			}
 		}
 				
 		/**
