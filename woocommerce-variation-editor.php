@@ -25,6 +25,11 @@ Text Domain: aad-wcve
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+Important files from woocommerce related to variable products:
+ - woocommerce/includes/class-wc-product-variable.php : Defines Variable product class
+ - woocommerce/includes/class-wc-product-variation.php : Defines product class for a single variation of a variable product
+ - woocommerce/admin/meta-boxes/class-wc-meta-box-product-data.php : Creates meta box for editing products on admin screen
 */
 
 defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
@@ -416,6 +421,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 		{
 			if (count($variation_updates) == 0) return;
 			$price_changed = false;
+			$stock_status_changed = false;
 			
 			foreach ($variation_updates as $variation_id => $fields) {
 				/**
@@ -511,6 +517,7 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 				 */
 				if (isset($fields['stock_status'])) {
 					wc_update_product_stock_status( $variation_id, $fields['stock_status']);
+					$stock_status_changed = true;
 				}
 
 				$manage_stock = isset($fields['manage_stock']) ? 
@@ -543,11 +550,19 @@ if (is_admin() && ! class_exists("aad_wcve")) {
 			} // End for each product variation
 			
 			/**
-			 * Update variable parent to keep prices in sync
+			 * Update variable parent to keep stock & prices in sync
 			 */
+			if ($stock_status_changed) {
+				WC_Product_Variable::sync_stock_status($this->product->id);
+			}
 			if ($price_changed) {
 				WC_Product_Variable::sync($this->product->id);
 			}
+			
+			/**
+			 * Clean transient cache after product update
+			 */
+			wc_delete_product_transients($this->product->id);
 		}
 				
 		/**
