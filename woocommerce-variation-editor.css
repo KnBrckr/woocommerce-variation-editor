@@ -31,7 +31,9 @@
 /*
 	Highlight fields that have changed
 */
-input.changed, select.changed, img.changed {
+.wcve_edit_variations input.changed, 
+.wcve_edit_variations select.changed, 
+.wcve_edit_variations img.changed {
 	border-width: 1px;
 	border-color: #C6F;
 	border-style: solid;
@@ -40,19 +42,70 @@ input.changed, select.changed, img.changed {
 /*
 	Align label & input of dimension column
  */ 
-.column-dimensions label, .aad-csve-dimension input {
+.wcve_edit_variations .column-dimensions label {
 	display: inline-block;
 }
 
-.column-dimensions label {
-	width: 1.5em;
+/*
+    Narrow ID column
+ */
+.wcve_edit_variations .column-primary {
+    width: 5em;
 }
+
+/*
+    Thumbnail
+ */
+.wcve_edit_variations .column-thumbnail_id {
+     width: 5em;
+ }
+
+/*
+    SKU
+ */
+.wcve_edit_variations .column-sku {
+    width: 9em;
+}
+.wcve_edit_variations .input-sku {
+    width: 8em;
+}
+
+/*
+    Price
+ */
+.wcve_edit_variations .column-regular_price,
+.wcve_edit_variations .column-sale_price {
+    width: 8em;
+}
+.wcve_edit_variations .input-regular_price,
+.wcve_edit_variations .input-sale_price {
+    width: 6em;
+}
+
+/*
+    Adjust Checkbox fields
+ */
+
+.wcve_edit_variations .column-stock_status,
+.wcve_edit_variations .column-manage_stock {
+    width: 5em;
+ }
 
 /*
 	Setup smaller width for stock field
  */
-.column-stock input {
+.wcve_edit_variations .column-stock {
+    width: 6em;
+ }
+.wcve_edit_variations .column-stock input {
 	width: 5em;
+}
+
+/*
+    Dimensions
+ */
+.wcve_edit_variations .column-dimensions label {
+	width: 1.5em;
 }
 
 /*

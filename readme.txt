@@ -22,6 +22,9 @@ WooCommerce plugin to provide spreadsheet style editing for product variations.
 
 == Changelog ==
 
+= 0.4.2 =
+* Adjust column widths in table
+
 = 0.4.1 =
 * Multi-word Attribute names generating invalid SQL query
 
