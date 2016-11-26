@@ -30,7 +30,7 @@
 
 defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
 
-class wcve_variation_Table extends WP_List_Table {
+class AAD_WCVE_VariationTable extends WP_List_Table {
 	/**
 	 * Variable Product
 	 *

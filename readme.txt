@@ -22,6 +22,10 @@ WooCommerce plugin to provide spreadsheet style editing for product variations.
 
 == Changelog ==
 
+= 0.5 =
+* Refactor to use a container plugin and asset directories
+* Include link to edit variation in the product edit screen
+
 = 0.4.2 =
 * Adjust column widths in table
 
