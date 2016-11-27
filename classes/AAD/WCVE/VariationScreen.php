@@ -23,6 +23,9 @@
  * @package woocommerce-variation-editor
  * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
  */
+
+namespace AAD\WCVE;
+
 /*
  *  Protect from direct execution
  */
@@ -32,7 +35,9 @@ if ( !defined( 'WP_PLUGIN_DIR' ) ) {
 	die( 'I don\'t think you should be here.' );
 }
 
-class AAD_WCVE_VariationScreen {
+use AAD\WCVE\VariationTable;
+
+class VariationScreen {
 
 	/**
 	 * Default number of variations displayed per screen
@@ -319,7 +324,7 @@ class AAD_WCVE_VariationScreen {
 		/**
 		 * Setup Table class used to display product list variations
 		 */
-		$this->variation_table = new AAD_WCVE_VariationTable( $this->product );
+		$this->variation_table = new VariationTable( $this->product );
 
 		/**
 		 * Perform actions

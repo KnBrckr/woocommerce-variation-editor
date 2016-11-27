@@ -28,9 +28,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
+namespace AAD\WCVE;
 
-class AAD_WCVE_VariationTable extends WP_List_Table {
+/*
+ *  Protect from direct execution
+ */
+if ( !defined( 'WP_PLUGIN_DIR' ) ) {
+	header( 'Status: 403 Forbidden' );
+	header( 'HTTP/1.1 403 Forbidden' );
+	die( 'I don\'t think you should be here.' );
+}
+
+class VariationTable extends \WP_List_Table {
 	/**
 	 * Variable Product
 	 *

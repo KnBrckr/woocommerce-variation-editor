@@ -1,0 +1,19 @@
+{
+    "name" : "action-a-day/woocommerce-variation-editor",
+    "description" : "",
+    "keywords" : ["wordpress", "plugin", "woocommerce", "variable-product"],
+    "homepage" : "http://action-a-day.com",
+    "license" : "",
+    "authors" : [
+        {
+            "name" : "Kenneth J. Brucker",
+            "email" : "ken.brucker@action-a-day.com",
+            "homepage" : "http://action-a-day.com"
+        }
+    ],
+    "type" : "wordpress-plugin",
+    "require": {
+        "php" : ">=5.4",
+        "composer/installers": "~1.0"
+    }
+}

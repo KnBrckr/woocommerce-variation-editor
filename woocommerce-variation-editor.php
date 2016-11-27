@@ -34,6 +34,9 @@ Important files from woocommerce related to variable products:
 
 defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
 
+use AAD\WCVE\Plugin;
+use AAD\WCVE\VariationScreen;
+
 /**
  * Define Class Autoloader
  */
@@ -41,7 +44,7 @@ spl_autoload_register( 'AAD_autoloader' );
 function AAD_autoloader( $class_name ) {
   if ( false !== strpos( $class_name, 'AAD' ) ) {
     $classes_dir = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR;
-    $class_file = str_replace( '_', DIRECTORY_SEPARATOR, $class_name ) . '.php';
+    $class_file = str_replace( '\\', DIRECTORY_SEPARATOR, $class_name ) . '.php';
     require_once $classes_dir . $class_file;
   }
 }
@@ -67,12 +70,13 @@ function AAD_WCVE_init()
 		return;
 	}
 	
-	$AADWCVE = new AAD_WCVE_Plugin();
+	$AADWCVE = new Plugin();
 	
 	$AADWCVE[ 'version' ]		  = '0.5';
 	$AADWCVE[ 'path' ]			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
 	$AADWCVE[ 'url' ]			  = plugin_dir_url( __FILE__ );
-	$AADWCVE[ 'VariationScreen' ] = new AAD_WCVE_VariationScreen();
+	
+	$AADWCVE[ 'VariationScreen' ] = new VariationScreen();
 	
 	$AADWCVE->run();
 }
