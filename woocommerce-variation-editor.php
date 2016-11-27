@@ -53,16 +53,13 @@ function AAD_autoloader( $class_name ) {
  * Hook plugin loaded to execute setup
  */
 add_action( 'plugins_loaded', 'AAD_WCVE_init' );
-global $AADWCVE;
 
 /**
  * Setup Plugin
  */
 
 function AAD_WCVE_init()
-{
-	global $AADWCVE;
-	
+{	
 	/**
 	 * Only setup on admin screens
 	 */
@@ -70,13 +67,18 @@ function AAD_WCVE_init()
 		return;
 	}
 	
-	$AADWCVE = new Plugin();
+	$plugin = new Plugin();
 	
-	$AADWCVE[ 'version' ]		  = '0.5';
-	$AADWCVE[ 'path' ]			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
-	$AADWCVE[ 'url' ]			  = plugin_dir_url( __FILE__ );
+	$plugin[ 'version' ]		  = '0.5';
+	$plugin[ 'path' ]			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
+	$plugin[ 'url' ]			  = plugin_dir_url( __FILE__ );
 	
-	$AADWCVE[ 'VariationScreen' ] = new VariationScreen();
+	$plugin[ 'VariationScreen' ] = function ($p) {
+		$varScreen = new VariationScreen( $p['version'], $p['url'] );
+		return $varScreen;
+	};
 	
-	$AADWCVE->run();
+	$varScreen = $plugin[ 'VariationScreen' ];
+	
+	$plugin->run();
 }

@@ -35,8 +35,6 @@ if ( !defined( 'WP_PLUGIN_DIR' ) ) {
 	die( 'I don\'t think you should be here.' );
 }
 
-use AAD\WCVE\VariationTable;
-
 class VariationScreen {
 
 	/**
@@ -82,7 +80,10 @@ class VariationScreen {
 	 * 
 	 * @return void
 	 */
-	public function __construct() {
+	public function __construct( $version, $url ) {
+		$this->version = $version;
+		$this->url = $url;
+		
 		$this->product_id			 = !empty( $_REQUEST[ 'product_id' ] ) ? (int) $_REQUEST[ 'product_id' ] : NULL;
 		$this->admin_notices		 = array();
 		$this->admin_notice_errors	 = array();
@@ -126,9 +127,7 @@ class VariationScreen {
 	 *
 	 * @return void
 	 */
-	public function action_admin_init() {
-		global $AADWCVE;
-		
+	public function action_admin_init() {		
 		/**
 		 * User must be able to manage WooCommerce to continue
 		 * TODO there might be a more granular privilege to check
@@ -145,9 +144,9 @@ class VariationScreen {
 			 */
 			wp_register_script(
 				'wcve-admin', // Handle
-				 $AADWCVE['url'] . 'js/wcve-admin.js', // URL to .js file
+				$this->url . 'js/wcve-admin.js', // URL to .js file
 				array( 'jquery-core' ), // Dependencies
-				$AADWCVE['version'], // Script version
+				$this->version, // Script version
 				true			// Place in footer to allow localization if needed
 			);
 
@@ -156,9 +155,9 @@ class VariationScreen {
 			 */
 			wp_register_style(
 			'aad-csve-css', // Handle
-				$AADWCVE['url'] . 'css/woocommerce-variation-editor.css', // URL to CSS file
+				$this->url . 'css/woocommerce-variation-editor.css', // URL to CSS file
 				false, // No Dependencies
-				$AADWCVE['version'], // CSS Version
+				$this->version, // CSS Version
 				'all'		   // Use for all media types
 			);
 
