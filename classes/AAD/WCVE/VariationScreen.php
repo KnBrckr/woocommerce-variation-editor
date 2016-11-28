@@ -80,9 +80,10 @@ class VariationScreen {
 	 * 
 	 * @return void
 	 */
-	public function __construct( $version, $url ) {
+	public function __construct( $version, $url, $tableService ) {
 		$this->version = $version;
 		$this->url = $url;
+		$this->tableService = $tableService;
 		
 		$this->product_id			 = !empty( $_REQUEST[ 'product_id' ] ) ? (int) $_REQUEST[ 'product_id' ] : NULL;
 		$this->admin_notices		 = array();
@@ -323,7 +324,7 @@ class VariationScreen {
 		/**
 		 * Setup Table class used to display product list variations
 		 */
-		$this->variation_table = new VariationTable( $this->product );
+		$this->variation_table = call_user_func( $this->tableService, $this->product );
 
 		/**
 		 * Perform actions

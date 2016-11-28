@@ -36,6 +36,7 @@ defined( 'ABSPATH' ) or die( 'I\'m Sorry Dave, I can\'t do that!' );
 
 use AAD\WCVE\Plugin;
 use AAD\WCVE\VariationScreen;
+use AAD\WCVE\VariationTable;
 
 /**
  * Define Class Autoloader
@@ -69,16 +70,30 @@ function AAD_WCVE_init()
 	
 	$plugin = new Plugin();
 	
-	$plugin[ 'version' ]		  = '0.5';
-	$plugin[ 'path' ]			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
-	$plugin[ 'url' ]			  = plugin_dir_url( __FILE__ );
+//	$plugin['product_id']     = get_query_var( 'product_id', NULL );
 	
-	$plugin[ 'VariationScreen' ] = function ($p) {
-		$varScreen = new VariationScreen( $p['version'], $p['url'] );
+	$plugin['version']		  = '0.5';
+	$plugin['path']			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
+	$plugin['url']			  = plugin_dir_url( __FILE__ );
+	
+	$variationTableService = function ($product) {
+		$varTable = new VariationTable( $product );
+		return $varTable;
+	};
+	$plugin['VariationScreen'] = function ($p) use ($variationTableService) {
+		$varScreen = new VariationScreen( $p['version'], $p['url'], $variationTableService );
 		return $varScreen;
 	};
 	
-	$varScreen = $plugin[ 'VariationScreen' ];
+	$variationScreen = $plugin[ 'VariationScreen' ];
 	
 	$plugin->run();
 }
+
+function AAD_WCVE_add_query_vars_filter( $vars )
+{
+	$vars[] = "product_id";
+	return $vars;
+}
+
+add_filter( 'query_vars', 'AAD_WCVE_add_query_vars_filter' );
