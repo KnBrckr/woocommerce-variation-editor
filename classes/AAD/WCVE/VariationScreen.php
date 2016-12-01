@@ -599,10 +599,10 @@ class VariationScreen {
 		 * Update variable parent to keep stock & prices in sync
 		 */
 		if ( $stock_status_changed ) {
-			WC_Product_Variable::sync_stock_status( $this->product->id );
+			\WC_Product_Variable::sync_stock_status( $this->product->id );
 		}
 		if ( $price_changed ) {
-			WC_Product_Variable::sync( $this->product->id );
+			\WC_Product_Variable::sync( $this->product->id );
 		}
 
 		/**
