@@ -368,7 +368,7 @@ class VariationScreen {
 					break;
 			}
 
-			// FIXME $sendback = add_query_arg('wcve_message', urlencode($message), $sendback);
+			// TODO Report results of Operation
 			wp_safe_redirect( $sendback );
 			exit;
 			// Don't get here
