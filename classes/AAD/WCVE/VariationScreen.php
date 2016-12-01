@@ -48,13 +48,6 @@ class VariationScreen {
 	const MENU_SLUG = 'edit-product-variations';
 
 	/**
-	 * Active Variable Product ID
-	 *
-	 * @var int
-	 */
-	private $product_id;
-
-	/**
 	 * Active Variable Product
 	 *
 	 * @var Object, class WC_Product_Variable
@@ -85,7 +78,6 @@ class VariationScreen {
 		$this->url = $url;
 		$this->tableService = $tableService;
 		
-		$this->product_id			 = !empty( $_REQUEST[ 'product_id' ] ) ? (int) $_REQUEST[ 'product_id' ] : NULL;
 		$this->admin_notices		 = array();
 		$this->admin_notice_errors	 = array();
 	}
@@ -261,7 +253,7 @@ class VariationScreen {
 		 * Generate URL and create the button
 		 */
 		$url = $this->get_edit_variation_url( $post_ID );
-		echo '<br/><a class="button" href="' . $url . '" id="aadWCVE-edit-variation-button"><span class=""></span>' . __( "Edit Product Variations", 'aad-wcve' ) . '</a><br/><br/>';
+		echo '<br/><a class="button" href="' . $url . '" id="aadWCVE-edit-variation-button">' . __( "Edit Product Variations", 'aad-wcve' ) . '</a><br/><br/>';
 	}
 
 	/**
@@ -303,12 +295,12 @@ class VariationScreen {
 	 * @return void
 	 */
 	public function action_load_table() {
-		if ( !$this->product_id )
+		$product_id = $this->get_query_var( 'product_id', NULL );
+		if ( !$product_id )
 			return; // Leave if no product defined
-		$this->product = wc_get_product( $this->product_id );
+		
+		$this->product = wc_get_product( intval( $product_id ) );
 		if ( !$this->product || (!$this->product->is_type( 'variable' )) ) {
-			$this->product_id = NULL; // If product could not be retrieved or it's not a variable product, reset
-			unset( $this->product );
 			return;
 		}
 
@@ -625,21 +617,30 @@ class VariationScreen {
 	 * @return void
 	 */
 	function render_edit_product_variations() {
+		$product_id = $this->get_query_var( 'product_id', 0 );
 		$title = !empty( $this->product ) ? $this->product->get_title() : "Undefined";
+		
+		$edit_product_url = get_edit_post_link( $product_id, "href" );
 
 		/**
 		 * Build form url
 		 */
 		$formurl = str_replace( '#038;', '&', menu_page_url( self::MENU_SLUG, false ) );
-		$formurl = add_query_arg( 'product_id', esc_attr( $this->product_id ), $formurl );
+		$formurl = add_query_arg( 'product_id', esc_attr( intval( $product_id ) ), $formurl );
 		?>
 		<div class="wrap">
 			<div id="icon-edit" class="icon32 icon32-edit-product-variations">
 				<br>
 			</div>
-			<h2><?php printf( __( 'Edit Product Variations for %s', 'aad-wcve' ), esc_attr( $title ) ); ?></h2>
+			<h2>
+				<?php printf( __( 'Edit Product Variations for %s', 'aad-wcve' ), esc_attr( $title ) ); ?>
+			</h2>
+			<br>
+			<a class="button" id="aadWCVE-edit-product-button" href="<?php echo $edit_product_url; ?>">Edit Product</a>
+			<br>
+			<br>
 		<?php
-		if ( $this->product_id ) {
+		if ( $product_id ) {
 			?>
 				<form action="<?php echo esc_url( $formurl ); ?>" method="post" accept-charset="utf-8">
 			<?php
@@ -717,5 +718,15 @@ class VariationScreen {
 				echo '</div>';
 			}
 		}
+	}
+	
+	/**
+	 * Get query variable
+	 * 
+	 * @param string $var Name of query variable to retrieve
+	 * @return string
+	 */
+	private function get_query_var( $var ) {
+		return isset( $_GET[$var] ) ? $_GET[$var] : '' ;
 	}
 }

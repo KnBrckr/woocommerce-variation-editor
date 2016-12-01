@@ -69,9 +69,7 @@ function AAD_WCVE_init()
 	}
 	
 	$plugin = new Plugin();
-	
-//	$plugin['product_id']     = get_query_var( 'product_id', NULL );
-	
+		
 	$plugin['version']		  = '0.5';
 	$plugin['path']			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
 	$plugin['url']			  = plugin_dir_url( __FILE__ );
@@ -89,11 +87,3 @@ function AAD_WCVE_init()
 	
 	$plugin->run();
 }
-
-function AAD_WCVE_add_query_vars_filter( $vars )
-{
-	$vars[] = "product_id";
-	return $vars;
-}
-
-add_filter( 'query_vars', 'AAD_WCVE_add_query_vars_filter' );
