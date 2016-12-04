@@ -646,7 +646,6 @@ class VariationScreen {
 			<?php
 			// Retrieve product variations for display
 			$this->variation_table->prepare_items();
-			// $this->variation_table->search_box('search', 'search_id'); // TODO Search Box must follow prepare_items() call
 			$this->variation_table->display();
 			?>
 				</form>
