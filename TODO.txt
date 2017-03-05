@@ -1,0 +1,4 @@
+TODO Update to use CRUD interfaces defined by WooCommerce v2.7
+    https://woocommerce.wordpress.com/2016/10/27/the-new-crud-classes-in-woocommerce-2-7/
+    https://woocommerce.wordpress.com/2017/01/27/deposits-2-7-extension-compatibility/
+    https://woocommerce.wordpress.com/2017/01/26/improved-logging-in-woocommerce-2-7/
