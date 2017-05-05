@@ -142,26 +142,13 @@ class VariationTable extends \WP_List_Table {
 			<select name="variation_<?php echo $variation_slug; ?>" id="filter_by_<?php echo $variation_slug; ?>">
 				<option value="all">Any <?php echo wc_attribute_label($title); ?>...</option>
 				<?php
-				/**
-				 * Retrieve attributes from DB
-				 */
-				$terms = wp_get_post_terms($this->product->id, $variation_slug);
-				if (! is_wp_error($terms)) {
-					foreach ($terms as $term) {
-						printf("<option value='%s' %s>%s</option>\n",
-							esc_attr($term->slug),
-							selected($selected, esc_attr($term->slug), false),
-							esc_attr($term->name)
-						);
-					}
-				} else {
-					foreach ($attributes as $term) {
-						printf("<option value='%s' %s>%s</option>\n",
-							esc_attr($term),
-							selected($selected, esc_attr($term), false),
-							esc_attr($term)
-						);
-					}
+				// TODO Display terms in correct order
+				foreach ($attributes as $term) {
+					printf("<option value='%s' %s>%s</option>\n",
+						esc_attr($term),
+						selected($selected, esc_attr($term), false),
+						esc_attr($term)
+					);
 				}
 				?>
 			</select>
@@ -319,6 +306,8 @@ class VariationTable extends \WP_List_Table {
 		 *  http://wordpress.stackexchange.com/questions/38530/most-efficient-way-to-get-posts-with-postmeta
 		 */
 		
+		// FIXME Use woocommerce classes to access variation data? Can it be done with speed?
+		
 		$query = "
 			SELECT dt.* FROM (
 			SELECT  p.ID as var_id,";
@@ -352,7 +341,7 @@ class VariationTable extends \WP_List_Table {
 			WHERE
 			   p.post_type = 'product_variation' and 
 			   p.post_status = 'publish' and 
-			   p.post_parent = '" . esc_sql($this->product->id) . "'
+			   p.post_parent = '" . esc_sql( $this->product->get_id() ) . "'
 			GROUP BY
 			   p.ID,p.post_title
 			) as dt where $filter
@@ -388,7 +377,6 @@ class VariationTable extends \WP_List_Table {
 	 * Extend the default display_rows() method to include a special header row for mass edit of all rows
 	 *
 	 * @return void
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
 	 */
 	function display_rows()
 	{
@@ -546,7 +534,7 @@ class VariationTable extends \WP_List_Table {
 	function column_sku($item)
 	{
 		return "<input type='text' size='5' name='sku[$item->var_id]' value='" . esc_attr($item->sku) . 
-			"' placeholder='" . esc_attr($this->product->sku) . "' class='input-sku wcve-cell' />";
+			"' placeholder='" . esc_attr($this->product->get_sku()) . "' class='input-sku wcve-cell' />";
 	}
 	
 	/**
@@ -676,10 +664,15 @@ class VariationTable extends \WP_List_Table {
 		$html = "";
 		$id = $item->var_id;
 		
+		$dims = array();
+		$dims['height'] = $this->product->get_height();
+		$dims['width'] = $this->product->get_width();
+		$dims['length'] = $this->product->get_length();
+		
 		foreach (array('length', 'width', 'height') as $dim) {
 			$html .= "<div>";
 			$html .= "<label for='product_${dim}_${id}'>" . $abbrev[$dim] . ":</label>";
-			$html .= "<input type='text' name='${dim}[${id}]' value='" . $item->$dim . "' id='product_${dim}_${id}' placeholder='" . esc_attr( $this->product->$dim ) . "' class='input-${dim} input-text wc_input_decimal wcve-cell' size='6'>";
+			$html .= "<input type='text' name='${dim}[${id}]' value='" . $item->$dim . "' id='product_${dim}_${id}' placeholder='" . esc_attr( $dims[$dim] ) . "' class='input-${dim} input-text wc_input_decimal wcve-cell' size='6'>";
 			$html .= "</div>";
 			
 		}

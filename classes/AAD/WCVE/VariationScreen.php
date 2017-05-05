@@ -182,24 +182,16 @@ class VariationScreen {
 	 * @return array of actions to be displayed for the Post
 	 */
 	public function filter_make_edit_variation_link_row( $actions, $post ) {
-		if ( $post->post_type != 'product' )
-			return $actions; // Only interested in WooCommerce products
-
-		$terms = wp_get_object_terms( $post->ID, 'product_type' );
-
-		if ( count( $terms ) > 0 ) {
-			$product_type = sanitize_title( current( $terms )->name );
-
-			/**
-			 * For variable products, add the edit variation action
-			 */
-			if ( $product_type == 'variable' ) {
+		$product = wc_get_product( $post ) ;
+		if ( false === $product )
+			return $actions;
+		
+		if ( 'variable' === $product->get_type() ) {
 				$url = $this->get_edit_variation_url( $post->ID );
 
 				$actions[ 'edit_product_variations' ] = '<a href="' . esc_url( $url ) . '" title="'
 				. esc_attr( __( "Edit Product Variations", 'aad-wcve' ) )
-				. '">' . __( 'Edit Variations', 'aad-wcve' ) . '</a>';
-			}
+				. '">' . __( 'Edit Variations', 'aad-wcve' ) . '</a>';			
 		}
 
 		return $actions;
@@ -227,9 +219,6 @@ class VariationScreen {
 	 */
 	public function action_add_edit_variation( $post )
 	{
-		$post_type = get_post_type();
-		$post_ID = get_the_ID();
-		
 		/**
 		 * User must be able to manage WooCommerce
 		 */
@@ -238,21 +227,19 @@ class VariationScreen {
 		}
 
 		/**
-		 * Leave if not working with a variable product
+		 * Get product object and ensure it's a variable product
 		 */
-		if ( 'product' != $post_type ) {
+		$product = wc_get_product( $post );
+		if ( false == $product )
 			return;
-		}
-
-		$product = wc_get_product( $post_ID );
-		if ( !$product || (!$product->is_type( 'variable' )) ) {
+				
+		if ( 'variable' != $product->get_type() )
 			return;
-		}
 		
 		/**
 		 * Generate URL and create the button
 		 */
-		$url = $this->get_edit_variation_url( $post_ID );
+		$url = $this->get_edit_variation_url( $product->get_id() );
 		echo '<br/><a class="button" href="' . $url . '" id="aadWCVE-edit-variation-button">' . __( "Edit Product Variations", 'aad-wcve' ) . '</a><br/><br/>';
 	}
 
@@ -300,7 +287,7 @@ class VariationScreen {
 			return; // Leave if no product defined
 		
 		$this->product = wc_get_product( intval( $product_id ) );
-		if ( !$this->product || (!$this->product->is_type( 'variable' )) ) {
+		if ( ! $this->product || ( 'variable' != $this->product->get_type() ) ) {
 			return;
 		}
 
@@ -473,6 +460,9 @@ class VariationScreen {
 		$stock_status_changed	 = false;
 
 		foreach ( $variation_updates as $variation_id => $fields ) {
+			
+			// FIXME Use CRUD for updating fields
+			
 			/**
 			 * SKU
 			 */
@@ -599,16 +589,16 @@ class VariationScreen {
 		 * Update variable parent to keep stock & prices in sync
 		 */
 		if ( $stock_status_changed ) {
-			\WC_Product_Variable::sync_stock_status( $this->product->id );
+			\WC_Product_Variable::sync_stock_status( $this->product->get_id() );
 		}
 		if ( $price_changed ) {
-			\WC_Product_Variable::sync( $this->product->id );
+			\WC_Product_Variable::sync( $this->product->get_id() );
 		}
 
 		/**
 		 * Clean transient cache after product update
 		 */
-		wc_delete_product_transients( $this->product->id );
+		wc_delete_product_transients( $this->product->get_id() );
 	}
 
 	/**

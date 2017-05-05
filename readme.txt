@@ -14,16 +14,17 @@ WooCommerce plugin to provide spreadsheet style editing for product variations.
 
 WooCommerce plugin to provide spreadsheet style editing for product variations.
 
+Requires WooCommerce 3.0 or later
+
 == Installation ==
 
 1. Unzip plugin to the `/wp-content/plugins/` directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
 
-
 == Changelog ==
 
 = 0.6 =
-* Update to use WooCommerce 3.0 interfaces
+* Address Deprecated APIs to be compatible with WooCommerce 3.0
 
 = 0.5 =
 * Refactor to use a container plugin and asset directories
