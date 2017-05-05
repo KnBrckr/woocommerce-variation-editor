@@ -279,11 +279,6 @@ class VariationTable extends \WP_List_Table {
 		
 		$orderby_clause =  'ORDER BY ' . sanitize_sql_orderby("`$orderby` $order");
 	    		
-		// /**
-		//  * Search string, if specified
-		//  */
-		// $search = !empty($_REQUEST["s"]) ? $_REQUEST["s"] : '';
-
 		/**
 		 * Add requested Filters
 		 */
