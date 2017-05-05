@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Variation Editor
 Plugin URI:  http://action-a-day.com/
 Description: WooCommerce plugin to provide spreadsheet style editing for product variations.
-Version:     0.5
+Version:     0.6
 Author:      Kenneth J. Brucker
 Author URI:  http://action-a-day.com
 License:     GPL2
@@ -70,7 +70,7 @@ function AAD_WCVE_init()
 	
 	$plugin = new Plugin();
 		
-	$plugin['version']		  = '0.5';
+	$plugin['version']		  = '0.6';
 	$plugin['path']			  = realpath( plugin_dir_path( __FILE__ ) ) . DIRECTORY_SEPARATOR;
 	$plugin['url']			  = plugin_dir_url( __FILE__ );
 	
