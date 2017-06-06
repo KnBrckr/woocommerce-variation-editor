@@ -23,6 +23,9 @@ Requires WooCommerce 3.0 or later
 
 == Changelog ==
 
+= 0.6.1 =
+* Autoloader function conflicting with other plugins in AAD namespace
+
 = 0.6 =
 * Address Deprecated APIs to be compatible with WooCommerce 3.0
 
