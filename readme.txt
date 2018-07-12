@@ -23,6 +23,9 @@ Requires WooCommerce 3.0 or later
 
 == Changelog ==
 
+= 0.6.2 =
+* Fix composer.json
+
 = 0.6.1 =
 * Autoloader function conflicting with other plugins in AAD namespace
 
