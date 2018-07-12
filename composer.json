@@ -1,14 +1,14 @@
 {
-    "name" : "action-a-day/woocommerce-variation-editor",
-    "description" : "",
+    "name" : "pumastudios/woocommerce-variation-editor",
+    "description" : "WooCommerce plugin to provide spreadsheet style editing for product variations.",
     "keywords" : ["wordpress", "plugin", "woocommerce", "variable-product"],
-    "homepage" : "http://action-a-day.com",
-    "license" : "",
+    "homepage" : "https://pumastudios.com",
+    "license" : "GPL2",
     "authors" : [
         {
             "name" : "Kenneth J. Brucker",
-            "email" : "ken.brucker@action-a-day.com",
-            "homepage" : "http://action-a-day.com"
+            "email" : "ken@pumastudios.com",
+            "homepage" : "https://pumastudios.com"
         }
     ],
     "type" : "wordpress-plugin",
